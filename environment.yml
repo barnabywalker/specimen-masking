@@ -1,0 +1,21 @@
+name: specimen-masking
+channels:
+  - fastchan
+  - conda-forge
+  - defaults
+dependencies:
+  - requests
+  - fastai
+  - pandas
+  - numpy
+  - tqdm
+  - pillow
+  - plantcv
+  - pip
+  - pip:
+    - kaggle
+    - wandb
+    - label-studio
+    - label-studio-sdk
+    - label-studio-converter
+
