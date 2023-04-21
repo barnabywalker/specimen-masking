@@ -1,6 +1,8 @@
 # Functions for setting up, training, and predicting with UNet segmentation models
 import pandas as pd
+import numpy as np
 import os
+import torch
 
 from fastai.callback.schedule import lr_find, fit_one_cycle
 from fastai.callback.progress import CSVLogger
@@ -17,6 +19,26 @@ from fastai.metrics import Dice
 from torchvision.models.resnet import resnet34, resnet18
 
 from typing import Optional, Callable, Union
+from PIL import Image
+
+
+def save_tensor_img(t: torch.Tensor, path: str) -> None:
+    """Save a torch Tensor object as an image.
+
+    Args: 
+        t: a torch tensor of shape (width, height) or (channels, width, height).
+        path: the path to save the image as, the suffix of the path (e.g. png) 
+              will determine what file type is saved
+    """
+    t = 255 * (t - t.min()) / (t.max() - t.min())
+    arr = np.uint8(t.numpy())
+
+    if len(t.shape) > 2:
+        img = Image.fromarray(np.moveaxis(arr, 0, -1), mode="RGB")
+    elif len(t.shape) == 2:
+        img = Image.fromarray(arr, mode="L")
+
+    img.save(path)
 
 
 def create_dls(
@@ -38,7 +60,7 @@ def create_dls(
     """
     if splitter is None:
         splitter = RandomSplitter(valid_pct=0.2)
-
+    mask_dir = Path(mask_dir)
     root = os.path.commonprefix([img_dir, mask_dir])
     dls = SegmentationDataLoaders.from_label_func(
         root,
@@ -55,6 +77,9 @@ def create_dls(
         bs=batch_size
     )
 
+    print(f"cuda available: {torch.cuda.is_available()}")
+    print(f"dls using device: {dls.device}")
+
     return dls
 
 
@@ -69,7 +94,7 @@ def create_splitter(meta_path: Optional[str]=None, valid_pct: float = 0.8) -> Un
     Returns:
         A fastai Splitter object.
     """
-    if metadata is not None:
+    if meta_path is not None:
         metadata = pd.read_csv(Path(meta_path), sep="\t")
         valid_barcodes = metadata[metadata.valid_set_equals_1 == 1].CatBarcode.values
         splitter = FuncSplitter(lambda o: int(Path(o).stem) in valid_barcodes)

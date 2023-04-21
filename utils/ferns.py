@@ -50,8 +50,8 @@ def process_fern_masks(
     Returns:
         Nothing, but should save the processed masks to the desired folder as a side-effect.
     """
-    mask_files = [f for f in os.listdir(maskdir) if f.endswith(".jpg") and not f.startswith("._")]
-
+    mask_files = [os.path.join(maskdir, f) for f in os.listdir(maskdir) if f.endswith(".jpg") and not f.startswith("._")]
+    
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
@@ -78,11 +78,11 @@ def download_ferns(
 
     img_root = os.path.join(base_root, "images")
     if not os.path.exists(img_root):
-        os.mkdir(img_root)
+        os.makedirs(img_root)
 
     mask_root = os.path.join(base_root, "masks")
     if not os.path.exists(mask_root):
-        os.mkdir(mask_root)
+        os.makedirs(mask_root)
 
     download_tarfile(FERN_URLS["imgs"], img_root, download_name="images.tar.gz", chunk_size=2048)
     download_tarfile(FERN_URLS["masks"], mask_root, download_name="masks.tar.gz", chunk_size=2048)

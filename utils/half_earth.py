@@ -4,7 +4,7 @@ import numpy as np
 import warnings
 
 from collections import defaultdict
-from typing import Tuple, Dict, List, Optional, Mapping, Iterable
+from typing import Tuple, Dict, List, Optional, Mapping, Iterable, Union
 
 from utils.downloads import _download_kaggle, _check_exists, _extract_archive
 
@@ -56,7 +56,7 @@ def check_levels(sample_level: str, weight_level: str) -> Tuple[str, str]:
     return sample_level, weight_level
 
 
-def extract_categories(metadata: Mapping[str, Iterable]) -> List[Dict[str, str | int]]:
+def extract_categories(metadata: Mapping[str, Iterable]) -> List[Dict[str, Union[str, int]]]:
     """Complete the taxonomic information in the metadata categories.
 
     Args:
@@ -74,8 +74,8 @@ def extract_categories(metadata: Mapping[str, Iterable]) -> List[Dict[str, str |
 
 def extract_annotations(
         metadata: Mapping[str, Iterable], 
-        categories: Optional[Iterable[Mapping[str, str | int]]] = None
-    ) -> List[Dict[str, str | int]]:
+        categories: Optional[Iterable[Mapping[str, Union[str, int]]]] = None
+    ) -> List[Dict[str, Union[str, int]]]:
     """Extract annotation data from the metadata, and optionally insert taxonomic info about categories.
 
     Args:
@@ -134,7 +134,7 @@ def sample_images(
         sample_level: str = "image_id", 
         weight_level: str = "image_id", 
         seed: Optional[int] = None
-    ) -> List[Dict[str, str | int]]:
+    ) -> List[Dict[str, Union[str, int]]]:
     """Draw a sample image information from a list of image annotations, selecting `n` images from each
     sample-level grouping or `n` images from the total ungrouped dataset, weighted to draw image info for 
     images from each weight-level grouping with equal probability.
@@ -165,7 +165,7 @@ def sample_grouped(
         sample_level: str = "image_id", 
         weight_level: str = "image_id", 
         seed: Optional[int] = None
-    ) -> List[Dict[str, str | int]]:
+    ) -> List[Dict[str, Union[str, int]]]:
     """Draw a sample image information from a list of image annotations, selecting n images from each
     sample-level grouping only.
 
