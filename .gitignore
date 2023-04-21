@@ -3,3 +3,6 @@ output/
 */__pycache__
 *.out
 *.sh
+*.zip
+*.out
+wandb/
