@@ -60,6 +60,18 @@ def find_unet_lr(
     ) -> None:
     """Produce a learning rate curve to select the best learning rate when
     training a UNet segmentation model.
+
+    Args:
+        name: an identifiable name to save the model and logs under.
+        images: path to a folder containing the input images.
+        masks: path to a folder containing matching ground-truth masks.
+        metadata: path to a metadata file used to determine train and validation sets (e.g for Smithsonian ferns)
+        save_dir: path to a folder to save outputs under.
+        valid_pct: proportion of the input data to use as a held-out validation set. Not used if a metadata file is provided.
+        batch_size: number of images in each batch.
+        img_size: target size of images, in pixels. Expects a single number so images will be resized to squares using padding.
+        backbone: name of a pretrained backbone. I think only resnet models work in this?
+        attention: whether to use self-attention or not.
     """
     splitter = create_splitter(meta_path=metadata, valid_pct=valid_pct)
     dls = create_dls(images, masks, size=img_size, splitter=splitter, batch_size=batch_size)
@@ -93,6 +105,27 @@ def train_unet(
         log_wandb: bool = False,
         **kwargs
     ) -> None:
+    """Set up and train a UNet model. This uses a one-cycle learning rate scheduler.
+
+    Args:
+        name: an identifiable name to save the model and logs under.
+        images: path to a folder containing the input images.
+        masks: path to a folder containing matching ground-truth masks.
+        metadata: path to a metadata file used to determine train and validation sets (e.g for Smithsonian ferns)
+        save_dir: path to a folder to save outputs under.
+        valid_pct: proportion of the input data to use as a held-out validation set. Not used if a metadata file is provided.
+        batch_size: number of images in each batch.
+        img_size: target size of images, in pixels. Expects a single number so images will be resized to squares using padding.
+        backbone: name of a pretrained backbone. I think only resnet models work in this?
+        attention: whether to use self-attention or not.
+        lr: maximum learning rate.
+        epochs: number of epochs to train for. If running a two-stage training, both stages will run for this number of epochs.
+        two_stage: whether to unfreeze to whole pretrained model, for a second stage of training.
+        log_wandb: optionally log the training process in W&B (https://wandb.ai/site).
+
+    Returns:
+        All outputs are saved under `save_dir`, so nothing is returned.
+    """
     splitter = create_splitter(meta_path=metadata, valid_pct=valid_pct)
     dls = create_dls(images, masks, size=img_size, splitter=splitter, batch_size=batch_size)
 
@@ -137,7 +170,22 @@ def predict_unet(
         attention: bool = False,
         **kwargs
     ):
-    """
+    """Set up and load a pretrained UNet model to make predictions with. I think this needs the original model
+    to be set up in exactly the same way, including dataloaders. If I'd been clever, I'd have stored most of this
+    in a config json.
+
+    Args:
+        name: the name of the model you want to load.
+        pred_dir: path to a directory with images you want to generate masks for.
+        images: path to the original directory with images used to train the loaded model.
+        masks: path to the original directory with masks used to train the loaded model.
+        metadata: path to the metadata file used to split the original dataset into train and validation sets.
+        save_dir: path to a directory to save the predictions under.
+        valid_pct: the original proportion of the original dataset used for validation, if a metadata file wasn't used.
+        batch_size: the original batch size used when training the model.
+        img_size: the target size of the predictions, must match the model being used.
+        backbone: the pretrained backbone of the original model.
+        attention: whether the original model uses self-attention.
     """
     splitter = create_splitter(meta_path=metadata, valid_pct=valid_pct)
     dls = create_dls(images, masks, size=img_size, splitter=splitter, batch_size=batch_size)
@@ -164,6 +212,12 @@ def predict_unet(
     
 
 def download_dataset(dataset: str, root: str) -> None:
+    """Download a dataset for training or prediction.
+
+    Args:
+        dataset: the name of the dataset, one of 'ferns' or 'halfearth'.
+        root: path to a directory to save the dataset under.
+    """
     if dataset == "ferns":
         download_ferns(root)
         process_fern_masks(os.path.join(root, "masks", "hires_masks"), os.path.join(root, "processed_masks"))
@@ -179,6 +233,16 @@ def sample_halfearth(
         weight_level: str, 
         seed: Optional[int] = None
     ) -> None:
+    """Draw a sample from the half-earth dataset (which is very big).
+
+    Args:
+        n: the number of samples to draw, per group in sample-level if above 'name'.
+        data: path to the folder containing the dataset.
+        out: path to save the sample under.
+        sample_level: the taxonomic level to sample at.
+        weight_level: the taxonomic level to weight the images at, for balanced sampling.
+        seed: a random seed, to set for reproducibility.
+    """
     sample_level, weight_level = check_levels(sample_level, weight_level)
     
     if not os.path.exists(os.path.join(out, "images")):
