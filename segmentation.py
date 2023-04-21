@@ -12,6 +12,8 @@ from fastai.callback.wandb import *
 from fastai.data.transforms import get_image_files
 
 from pathlib import Path
+from plantcv import plantcv as pcv
+from PIL import Image
 
 from argparse import ArgumentParser
 from utils.half_earth import LEVELS, check_levels, download_halfearth, extract_annotations, extract_categories, sample_images
@@ -28,6 +30,35 @@ def clear_pyplot_memory() -> None:
     plt.clf()
     plt.cla()
     plt.close()
+
+def process_masks(
+        maskdir: str, 
+        outdir: str, 
+        kernel: int = 5, 
+        iters: int = 1
+    ) -> None:
+    """Post-process predicted masks by adding dilation,
+    which helps join things up a bit and ensure we get as much of the specimen as possible.
+
+    Args:
+        maskdir: the path to a folder containing the predicted masks.
+        outdir: the path to a folder to save the files to.
+        kernel: size of the kernel to apply during dilation - a larger kernel fills in more space.
+        iters: number of iterations to run the dilation for - i think more iters fills in more space.
+    
+    Returns:
+        Nothing, but should save the processed masks to the desired folder as a side-effect.
+    """
+    mask_files = [os.path.join(maskdir, f) for f in os.listdir(maskdir)]
+    
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    for f in tqdm(mask_files):
+        mask, path, fname = pcv.readimage(f, "native")
+        processed = pcv.dilate(gray_img=mask, ksize=kernel, i=iters)
+        processed_img = Image.fromarray(processed)
+        processed_img.save(os.path.join(outdir, fname))
 
 def unet(cmd: str, **kwargs) -> None:
     """Run commands for UNet training and inference.
@@ -328,6 +359,14 @@ def main():
     parser_dl.add_argument("dataset", choices=["ferns", "halfearth"])
     parser_dl.add_argument("--root", default="data/", type=str)
     parser_dl.set_defaults(func=download_dataset)
+
+    # post-processing masks
+    parser_proc = subparsers.add_parser("postprocess", description="post-process predicted masks")
+    parser_proc.add_argument("maskdir", type=str)
+    parser_proc.add_argument("--outdir", default="output", type=str)
+    parser_proc.add_argument("kernel", default=5, type=int)
+    parser_proc.add_argument("iters", default=1, type=int)
+    parser_proc.set_defaults(func=process_masks)
 
     args = parser.parse_args()
     arg_dict = vars(args)
