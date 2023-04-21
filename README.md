@@ -116,4 +116,4 @@ A fair number of things are hard-coded in here, so you might need to fiddle with
 
 ## Issues
 
-If you have any problems or questions, please create an issue! But this repository isn't under active development, so it might take a while to get an answer.
+If you have any problems or questions, [please create an issue](https://github.com/barnabywalker/specimen-masking/issues/new)! But this repository isn't under active development, so it might take a while to get an answer.
